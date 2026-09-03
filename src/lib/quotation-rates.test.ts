@@ -8,19 +8,51 @@ import {
   calculateResidentialEstimate,
 } from "./quotation-rates.ts";
 
-test("residential matrix matches the handwritten sheet exactly", () => {
+test("residential matrix matches the first image", () => {
   assert.deepEqual(
-    RESIDENTIAL.map((plot) => ({
-      label: plot.label,
-      plotAreaMin: plot.plotAreaMin,
-      plotAreaMax: plot.plotAreaMax,
-      groundFloorAreaMin: plot.groundFloorAreaMin,
-      groundFloorAreaMax: plot.groundFloorAreaMax,
-      grey: plot.grey,
-      finishing: plot.finishing,
-      mep: plot.mep,
-      furnishing: plot.furnishing,
+    RESIDENTIAL.map(({ label, area, grey, finishing }) => ({
+      label,
+      area,
+      grey,
+      finishing,
     })),
+    [
+      { label: "3.5 Marla", area: 1430, grey: 2800, finishing: 3500 },
+      { label: "5 Marla", area: 1900, grey: 2800, finishing: 3500 },
+      { label: "7 Marla", area: 2450, grey: 2850, finishing: 3500 },
+      { label: "10 Marla", area: 2900, grey: 2900, finishing: 3800 },
+      { label: "12 Marla", area: 3500, grey: 2800, finishing: 3700 },
+      { label: "1 Kanal", area: 5000, grey: 2750, finishing: 3300 },
+      { label: "2 Kanal", area: 7800, grey: 2750, finishing: 3300 },
+    ],
+  );
+});
+
+test("commercial matrix matches the second image", () => {
+  assert.deepEqual(
+    COMMERCIAL.map(
+      ({
+        label,
+        plotAreaMin,
+        plotAreaMax,
+        groundFloorAreaMin,
+        groundFloorAreaMax,
+        grey,
+        finishing,
+        mep,
+        furnishing,
+      }) => ({
+        label,
+        plotAreaMin,
+        plotAreaMax,
+        groundFloorAreaMin,
+        groundFloorAreaMax,
+        grey,
+        finishing,
+        mep,
+        furnishing,
+      }),
+    ),
     [
       {
         label: "3 Marla",
@@ -92,70 +124,29 @@ test("residential matrix matches the handwritten sheet exactly", () => {
   );
 });
 
-test("commercial matrix matches the handwritten sheet exactly", () => {
-  assert.deepEqual(
-    COMMERCIAL.map((plot) => ({
-      label: plot.label,
-      area: plot.area,
-      grey: plot.grey,
-      finishing: plot.finishing,
-    })),
-    [
-      { label: "3.5 Marla", area: 1430, grey: 2800, finishing: 3500 },
-      { label: "5 Marla", area: 1900, grey: 2800, finishing: 3500 },
-      { label: "7 Marla", area: 2450, grey: 2850, finishing: 3500 },
-      { label: "10 Marla", area: 2900, grey: 2900, finishing: 3800 },
-      { label: "12 Marla", area: 3500, grey: 2800, finishing: 3700 },
-      { label: "1 Kanal", area: 5000, grey: 2750, finishing: 3300 },
-      { label: "2 Kanal", area: 7800, grey: 2750, finishing: 3300 },
-    ],
-  );
-});
+test("residential estimate uses the selected table covered area", () => {
+  const estimate = calculateResidentialEstimate(RESIDENTIAL[3], ["grey", "finishing"]);
 
-test("residential totals use the selected covered area multiplied by the active scope rate with no commercial bleed-through", () => {
-  const plot = RESIDENTIAL[3];
-  const estimate = calculateResidentialEstimate(plot, 2000, ["grey", "finishing", "mep"]);
-
-  assert.equal(plot.grey, 5800);
-  assert.equal(plot.finishing, 7300);
-  assert.equal(plot.mep, 4800);
-  assert.equal(plot.furnishing, 4000);
-  assert.equal(estimate.totalArea, 2000);
-  assert.equal(estimate.total, 2000 * (5800 + 7300 + 4800));
+  assert.equal(estimate.totalArea, 2900);
+  assert.equal(estimate.total, 2900 * (2900 + 3800));
   assert.deepEqual(
     estimate.lines.map((line) => ({ label: line.label, rate: line.rate, amount: line.amount })),
     [
-      { label: "Grey Structure", rate: 5800, amount: 11600000 },
-      { label: "Finishing", rate: 7300, amount: 14600000 },
-      { label: "MEP / HVAC", rate: 4800, amount: 9600000 },
+      { label: "Grey Structure", rate: 2900, amount: 8410000 },
+      { label: "Finishing", rate: 3800, amount: 11020000 },
     ],
   );
 });
 
-test("zero covered area produces a zero residential grand total", () => {
-  const estimate = calculateResidentialEstimate(RESIDENTIAL[4], 0, ["grey", "finishing"]);
-
-  assert.equal(estimate.totalArea, 0);
-  assert.equal(estimate.total, 0);
-  assert.deepEqual(
-    estimate.lines.map((line) => line.amount),
-    [0, 0],
+test("commercial estimate includes commercial scopes and floor count", () => {
+  const estimate = calculateCommercialEstimate(
+    COMMERCIAL[3],
+    2040,
+    2,
+    ["grey", "finishing", "mep", "furnishing"],
   );
-});
 
-test("commercial totals multiply the floor area by floors and isolate the commercial rate table", () => {
-  const plot = COMMERCIAL[3];
-  const estimate = calculateCommercialEstimate(plot, 2900, 2, ["grey", "finishing"]);
-
-  assert.equal(plot.grey, 2900);
-  assert.equal(plot.finishing, 3800);
-  assert.equal(estimate.totalArea, 5800);
-  assert.equal(estimate.total, 5800 * 2900 + 5800 * 3800);
-  assert.deepEqual(
-    estimate.lines.map((line) => ({ label: line.label, rate: line.rate, amount: line.amount })),
-    [
-      { label: "Grey Structure", rate: 2900, amount: 16820000 },
-      { label: "Finishing", rate: 3800, amount: 22040000 },
-    ],
-  );
+  assert.equal(estimate.totalArea, 4080);
+  assert.equal(estimate.total, 4080 * (5800 + 7300 + 4800 + 4000));
+  assert.equal(estimate.lines.length, 4);
 });

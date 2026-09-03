@@ -23,7 +23,6 @@ export function CalculatorFab() {
   const [category, setCategory] = useState<Category>("residential");
   const [resIdx, setResIdx] = useState(3);
   const [comIdx, setComIdx] = useState(3);
-  const [resArea, setResArea] = useState(0);
   const [comAreaOverride, setComAreaOverride] = useState<number | null>(null);
   const [floors, setFloors] = useState(1);
   const [resScopes, setResScopes] = useState<ResidentialScope[]>(["grey", "finishing"]);
@@ -38,12 +37,9 @@ export function CalculatorFab() {
 
   const resPlot = RESIDENTIAL[resIdx];
   const comPlot = COMMERCIAL[comIdx];
-  const comArea = comAreaOverride ?? comPlot.area;
+  const comArea = comAreaOverride ?? comPlot.groundFloorAreaMax;
 
-  const selectRes = (i: number) => {
-    setResIdx(i);
-    setResArea(0);
-  };
+  const selectRes = (i: number) => setResIdx(i);
   const selectCom = (i: number) => {
     setComIdx(i);
     setComAreaOverride(null);
@@ -54,17 +50,17 @@ export function CalculatorFab() {
 
   const { lines, total, totalArea } = useMemo(() => {
     if (category === "residential") {
-      return calculateResidentialEstimate(resPlot, resArea, resScopes);
+      return calculateResidentialEstimate(resPlot, resScopes);
     }
 
     return calculateCommercialEstimate(comPlot, comArea, floors, comScopes);
-  }, [category, resArea, resPlot, resScopes, comArea, comPlot, comScopes, floors]);
+  }, [category, resPlot, resScopes, comArea, comPlot, comScopes, floors]);
 
   const plotLabel = category === "residential" ? resPlot.label : comPlot.label;
 
   const waText = `Assalam-o-Alaikum! I used the ${SITE.short} cost calculator.\n\nCategory: ${category === "residential" ? "Residential" : "Commercial"}\nPlot size: ${plotLabel}\n${
     category === "residential"
-      ? `Covered area (Ground + First + Mumty): ${totalArea.toLocaleString()} Sq.ft`
+      ? `Covered area: ${totalArea.toLocaleString()} Sq.ft`
       : `Single floor covered area: ${comArea.toLocaleString()} Sq.ft\nFloors: ${floors}\nTotal covered area: ${totalArea.toLocaleString()} Sq.ft`
   }\n\n${lines
     .map((l) => `${l.label}: ${l.area.toLocaleString()} x ${l.rate} = ${pkr(l.amount)}`)
@@ -170,29 +166,13 @@ export function CalculatorFab() {
               {category === "residential" ? (
                 <div>
                   <div className="flex items-center justify-between">
-                    <p className={labelCls}>Total covered area</p>
+                    <p className={labelCls}>Covered area</p>
                     <span className="text-sm font-bold text-primary">
-                      {resArea.toLocaleString()} Sq.ft
+                      {resPlot.area.toLocaleString()} Sq.ft
                     </span>
                   </div>
-                  <input
-                    type="number"
-                    min={100}
-                    step={5}
-                    value={resArea}
-                    onChange={(e) => setResArea(Math.max(0, Number(e.target.value)))}
-                    className="mt-3 w-full rounded-lg border border-border bg-background/40 px-3 py-2.5 text-sm font-semibold text-foreground"
-                    aria-label="Total covered area in square feet"
-                  />
                   <p className="mt-2 text-[0.7rem] leading-relaxed text-muted-foreground">
-                    Note: Total Covered Area includes Ground Floor + First Floor + Mumty.
-                  </p>
-                  <p className="mt-2 text-[0.7rem] leading-relaxed text-muted-foreground">
-                    Sheet reference: ground-floor covered area is{" "}
-                    {resPlot.groundFloorAreaMin.toLocaleString()}–
-                    {resPlot.groundFloorAreaMax.toLocaleString()} Sq.ft; plot area is{" "}
-                    {resPlot.plotAreaMin.toLocaleString()}–{resPlot.plotAreaMax.toLocaleString()}{" "}
-                    Sq.ft.
+                    Sheet covered area rate: {resPlot.area.toLocaleString()} Sq.ft.
                   </p>
                 </div>
               ) : (
@@ -213,8 +193,9 @@ export function CalculatorFab() {
                       aria-label="Single floor covered area in square feet"
                     />
                     <p className="mt-2 text-[0.7rem] leading-relaxed text-muted-foreground">
-                      Note: Area shown is per single floor. Total area is calculated based on the
-                      number of floors selected.
+                      Ground-floor reference range: {comPlot.groundFloorAreaMin.toLocaleString()}–
+                      {comPlot.groundFloorAreaMax.toLocaleString()} Sq.ft. Total area is based on
+                      the number of floors selected.
                     </p>
                   </div>
 

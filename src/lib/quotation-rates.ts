@@ -1,7 +1,14 @@
-export type ResidentialScope = "grey" | "finishing" | "mep" | "furnishing";
-export type CommercialScope = "grey" | "finishing";
+export type ResidentialScope = "grey" | "finishing";
+export type CommercialScope = "grey" | "finishing" | "mep" | "furnishing";
 
 export type ResidentialPlot = {
+  label: string;
+  area: number;
+  grey: number;
+  finishing: number;
+};
+
+export type CommercialPlot = {
   label: string;
   plotAreaMin: number;
   plotAreaMax: number;
@@ -13,26 +20,29 @@ export type ResidentialPlot = {
   furnishing: number;
 };
 
-export type CommercialPlot = {
-  label: string;
-  area: number;
-  grey: number;
-  finishing: number;
-};
-
 export const RES_SCOPES = [
   { id: "grey", label: "Grey Structure" },
   { id: "finishing", label: "Finishing" },
-  { id: "mep", label: "MEP / HVAC" },
-  { id: "furnishing", label: "Furnishing" },
 ] as const;
 
 export const COM_SCOPES = [
   { id: "grey", label: "Grey Structure" },
   { id: "finishing", label: "Finishing" },
+  { id: "mep", label: "MEP / HVAC / FP" },
+  { id: "furnishing", label: "Furnishing" },
 ] as const;
 
 export const RESIDENTIAL: ResidentialPlot[] = [
+  { label: "3.5 Marla", area: 1430, grey: 2800, finishing: 3500 },
+  { label: "5 Marla", area: 1900, grey: 2800, finishing: 3500 },
+  { label: "7 Marla", area: 2450, grey: 2850, finishing: 3500 },
+  { label: "10 Marla", area: 2900, grey: 2900, finishing: 3800 },
+  { label: "12 Marla", area: 3500, grey: 2800, finishing: 3700 },
+  { label: "1 Kanal", area: 5000, grey: 2750, finishing: 3300 },
+  { label: "2 Kanal", area: 7800, grey: 2750, finishing: 3300 },
+];
+
+export const COMMERCIAL: CommercialPlot[] = [
   {
     label: "3 Marla",
     plotAreaMin: 675,
@@ -101,38 +111,18 @@ export const RESIDENTIAL: ResidentialPlot[] = [
   },
 ];
 
-export const COMMERCIAL: CommercialPlot[] = [
-  { label: "3.5 Marla", area: 1430, grey: 2800, finishing: 3500 },
-  { label: "5 Marla", area: 1900, grey: 2800, finishing: 3500 },
-  { label: "7 Marla", area: 2450, grey: 2850, finishing: 3500 },
-  { label: "10 Marla", area: 2900, grey: 2900, finishing: 3800 },
-  { label: "12 Marla", area: 3500, grey: 2800, finishing: 3700 },
-  { label: "1 Kanal", area: 5000, grey: 2750, finishing: 3300 },
-  { label: "2 Kanal", area: 7800, grey: 2750, finishing: 3300 },
-];
-
-export function calculateResidentialEstimate(
-  plot: ResidentialPlot,
-  area: number,
-  scopes: ResidentialScope[],
-) {
-  const totalArea = Number.isFinite(area) ? Math.max(area, 0) : 0;
+export function calculateResidentialEstimate(plot: ResidentialPlot, scopes: ResidentialScope[]) {
   const lines = RES_SCOPES.filter((scope) => scopes.includes(scope.id as ResidentialScope)).map(
     (scope) => {
       const rate = plot[scope.id as ResidentialScope];
-      return {
-        label: scope.label,
-        rate,
-        area: totalArea,
-        amount: totalArea * rate,
-      };
+      return { label: scope.label, rate, area: plot.area, amount: plot.area * rate };
     },
   );
 
   return {
     lines,
     total: lines.reduce((sum, line) => sum + line.amount, 0),
-    totalArea,
+    totalArea: plot.area,
   };
 }
 
@@ -147,12 +137,7 @@ export function calculateCommercialEstimate(
   const lines = COM_SCOPES.filter((scope) => scopes.includes(scope.id as CommercialScope)).map(
     (scope) => {
       const rate = plot[scope.id as CommercialScope];
-      return {
-        label: scope.label,
-        rate,
-        area: totalArea,
-        amount: totalArea * rate,
-      };
+      return { label: scope.label, rate, area: totalArea, amount: totalArea * rate };
     },
   );
 
