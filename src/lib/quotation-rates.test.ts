@@ -138,6 +138,14 @@ test("residential estimate uses the selected table covered area", () => {
   );
 });
 
+test("residential estimate accepts a custom covered area", () => {
+  const estimate = calculateResidentialEstimate(RESIDENTIAL[3], ["grey"], 3200);
+
+  assert.equal(estimate.totalArea, 3200);
+  assert.equal(estimate.total, 3200 * 2900);
+  assert.equal(estimate.lines[0].area, 3200);
+});
+
 test("commercial estimate includes commercial scopes and floor count", () => {
   const estimate = calculateCommercialEstimate(
     COMMERCIAL[3],

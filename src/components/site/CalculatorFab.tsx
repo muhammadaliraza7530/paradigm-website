@@ -23,6 +23,7 @@ export function CalculatorFab() {
   const [category, setCategory] = useState<Category>("residential");
   const [resIdx, setResIdx] = useState(3);
   const [comIdx, setComIdx] = useState(3);
+  const [resAreaOverride, setResAreaOverride] = useState<number | null>(null);
   const [comAreaOverride, setComAreaOverride] = useState<number | null>(null);
   const [floors, setFloors] = useState(1);
   const [resScopes, setResScopes] = useState<ResidentialScope[]>(["grey", "finishing"]);
@@ -38,8 +39,12 @@ export function CalculatorFab() {
   const resPlot = RESIDENTIAL[resIdx];
   const comPlot = COMMERCIAL[comIdx];
   const comArea = comAreaOverride ?? comPlot.groundFloorAreaMax;
+  const resArea = resAreaOverride ?? resPlot.area;
 
-  const selectRes = (i: number) => setResIdx(i);
+  const selectRes = (i: number) => {
+    setResIdx(i);
+    setResAreaOverride(null);
+  };
   const selectCom = (i: number) => {
     setComIdx(i);
     setComAreaOverride(null);
@@ -50,11 +55,11 @@ export function CalculatorFab() {
 
   const { lines, total, totalArea } = useMemo(() => {
     if (category === "residential") {
-      return calculateResidentialEstimate(resPlot, resScopes);
+      return calculateResidentialEstimate(resPlot, resScopes, resArea);
     }
 
     return calculateCommercialEstimate(comPlot, comArea, floors, comScopes);
-  }, [category, resPlot, resScopes, comArea, comPlot, comScopes, floors]);
+  }, [category, resPlot, resScopes, resArea, comArea, comPlot, comScopes, floors]);
 
   const plotLabel = category === "residential" ? resPlot.label : comPlot.label;
 
@@ -168,11 +173,19 @@ export function CalculatorFab() {
                   <div className="flex items-center justify-between">
                     <p className={labelCls}>Covered area</p>
                     <span className="text-sm font-bold text-primary">
-                      {resPlot.area.toLocaleString()} Sq.ft
+                      {resArea.toLocaleString()} Sq.ft
                     </span>
                   </div>
+                  <input
+                    type="number"
+                    min={100}
+                    value={resArea}
+                    onChange={(e) => setResAreaOverride(Math.max(0, Number(e.target.value)))}
+                    className="mt-3 w-full rounded-lg border border-border bg-background/40 px-3 py-2.5 text-sm font-semibold text-foreground"
+                    aria-label="Covered area in square feet"
+                  />
                   <p className="mt-2 text-[0.7rem] leading-relaxed text-muted-foreground">
-                    Sheet covered area rate: {resPlot.area.toLocaleString()} Sq.ft.
+                    Sheet covered area reference: {resPlot.area.toLocaleString()} Sq.ft.
                   </p>
                 </div>
               ) : (

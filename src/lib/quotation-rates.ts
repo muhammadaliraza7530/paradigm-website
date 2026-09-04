@@ -111,18 +111,23 @@ export const COMMERCIAL: CommercialPlot[] = [
   },
 ];
 
-export function calculateResidentialEstimate(plot: ResidentialPlot, scopes: ResidentialScope[]) {
+export function calculateResidentialEstimate(
+  plot: ResidentialPlot,
+  scopes: ResidentialScope[],
+  coveredArea = plot.area,
+) {
+  const totalArea = Number.isFinite(coveredArea) ? Math.max(coveredArea, 0) : 0;
   const lines = RES_SCOPES.filter((scope) => scopes.includes(scope.id as ResidentialScope)).map(
     (scope) => {
       const rate = plot[scope.id as ResidentialScope];
-      return { label: scope.label, rate, area: plot.area, amount: plot.area * rate };
+      return { label: scope.label, rate, area: totalArea, amount: totalArea * rate };
     },
   );
 
   return {
     lines,
     total: lines.reduce((sum, line) => sum + line.amount, 0),
-    totalArea: plot.area,
+    totalArea,
   };
 }
 
